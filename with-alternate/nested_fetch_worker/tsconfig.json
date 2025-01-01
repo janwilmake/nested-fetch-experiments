@@ -1,0 +1,16 @@
+{
+  "include": ["**/*.ts"],
+  "files": ["worker_configuration.d.ts"],
+  "compilerOptions": {
+    "resolveJsonModule": true,
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "lib": ["es2022", "DOM"],
+    "strict": true,
+    "types": ["./.wrangler/types/runtime"],
+    "noEmit": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "declaration": true
+  }
+}

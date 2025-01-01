@@ -1,0 +1,6 @@
+#:schema node_modules/wrangler/config-schema.json
+
+name = "slow-worker"
+main = "./main.ts"
+compatibility_date = "2025-01-01"
+routes = [{ pattern = "test.github-backup.com", custom_domain = true }]

@@ -1,0 +1,5 @@
+{
+  "scripts": {
+    "types": "npx wrangler types --experimental-include-runtime"
+  }
+}

@@ -1,0 +1,5 @@
+#:schema node_modules/wrangler/config-schema.json
+name = "nested_fetch_worker_alternate"
+main = "./main.ts"
+compatibility_date = "2025-01-01"
+routes = [{ pattern = "alternate.getrelevantcode.com", custom_domain = true }]

@@ -1,0 +1,6 @@
+name = "nested_fetch_worker"
+main = "./main.ts"
+compatibility_date = "2025-01-01"
+services = [
+  { binding = "nested_fetch_worker", service = "nested_fetch_worker" }
+]

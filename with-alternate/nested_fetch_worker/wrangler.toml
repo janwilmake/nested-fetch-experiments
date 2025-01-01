@@ -1,0 +1,4 @@
+#:schema node_modules/wrangler/config-schema.json
+name = "nested_fetch_worker"
+main = "./main.ts"
+compatibility_date = "2025-01-01"
