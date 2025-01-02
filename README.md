@@ -10,3 +10,7 @@ Conclusion for now:
 
 - queues remain the best way to distribute workload
 - in deno, a queue likely doesn't have the same concurrency (its purpose is to deliver high workloads) and may be faster than in cloudflare. i could test this at another time https://docs.deno.com/deploy/kv/manual/queue_overview/#queue-behavior
+
+Also, a conclusion is that it's actually quite annoying that it's not possible to easily do recursive requests in workers. I believe it should be simpler and you should not immediately get an error for "Loop detected" or stuff like that, because sometimes it's just important and useful to be able to do such things.
+
+And create stronger patterns that can make it possible to do more with workers. Now we are bound to and required to use things like the queue, and that's not needed, because if you can just recursively call workers, you can do these patterns in other ways that make them potentially faster, more performant, more cheap. Yeah, and I think I think queues are not perfect in every scenario. But anyway, that's just my opinion. And I think there's definitely a lot that can be improved for workers, but for now we need to do it with the queues system that we were given.
