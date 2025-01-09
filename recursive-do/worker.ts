@@ -129,7 +129,7 @@ export class CreatorDO extends DurableObject {
         headers: { "Content-Type": "application/json" },
       });
     } catch (e: any) {
-      return new Response(`CreatorDO Error: ${error.message}`, {
+      return new Response(`CreatorDO Error: ${e.message}`, {
         status: 500,
       });
     }
