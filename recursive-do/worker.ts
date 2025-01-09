@@ -89,40 +89,43 @@ export class CreatorDO extends DurableObject {
     if (request.method !== "POST") {
       return new Response("Method not allowed", { status: 405 });
     }
+    try {
+      const { urls } = (await request.json()) as { urls: URLRequest[] };
 
-    const { urls } = (await request.json()) as { urls: URLRequest[] };
+      // If URLs length is <= 500, create RequestSchedulerDOs directly
+      if (urls.length <= 500) {
+        return await this.processUrlBatch(urls);
+      }
 
-    // If URLs length is <= 500, create RequestSchedulerDOs directly
-    if (urls.length <= 500) {
-      return await this.processUrlBatch(urls);
+      // Split URLs into batches of 500 and create multiple CreatorDOs
+      const batches = this.splitIntoBatches(urls, 500);
+      const results = await Promise.all(
+        batches.map(async (batchUrls) => {
+          const creatorId = this.env.CREATOR.newUniqueId();
+          const creator = this.env.CREATOR.get(creatorId);
+          const response = await creator.fetch(
+            new Request("https://dummy-url/process", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({ urls: batchUrls }),
+            }),
+          );
+          return response.json();
+        }),
+      );
+
+      // Combine results from all batches
+      const combinedResults = this.combineResults(results);
+      return new Response(JSON.stringify(combinedResults), {
+        headers: { "Content-Type": "application/json" },
+      });
+    } catch (e: any) {
+      return new Response(`CreatorDO Error: ${error.message}`, {
+        status: 500,
+      });
     }
-
-    // Split URLs into batches of 500 and create multiple CreatorDOs
-    const batches = this.splitIntoBatches(urls, 500);
-    const results = await Promise.all(
-      batches.map(async (batchUrls) => {
-        const creatorId = this.env.CREATOR.newUniqueId();
-        const creator = this.env.CREATOR.get(creatorId);
-        const response = await creator.fetch(
-          new Request("https://dummy-url/process", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({ urls: batchUrls }),
-          }),
-        );
-        return response.json();
-      }),
-    );
-
-    // Combine results from all batches
-    const combinedResults = this.combineResults(results);
-    return new Response(JSON.stringify(combinedResults), {
-      headers: {
-        "Content-Type": "application/json",
-      },
-    });
   }
 
   private splitIntoBatches<T>(array: T[], size: number): T[][] {
@@ -266,7 +269,7 @@ export class RequestSchedulerDO extends DurableObject {
 
       return new Response("Invalid method", { status: 405 });
     } catch (error: any) {
-      return new Response(`Error: ${error.message}`, {
+      return new Response(`RequestSchedulerDO Error: ${error.message}`, {
         status: 500,
       });
     }
