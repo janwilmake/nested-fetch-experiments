@@ -14,3 +14,11 @@ Conclusion for now:
 Also, a conclusion is that it's actually quite annoying that it's not possible to easily do recursive requests in workers. I believe it should be simpler and you should not immediately get an error for "Loop detected" or stuff like that, because sometimes it's just important and useful to be able to do such things.
 
 And create stronger patterns that can make it possible to do more with workers. Now we are bound to and required to use things like the queue, and that's not needed, because if you can just recursively call workers, you can do these patterns in other ways that make them potentially faster, more performant, more cheap. Yeah, and I think I think queues are not perfect in every scenario. But anyway, that's just my opinion. And I think there's definitely a lot that can be improved for workers, but for now we need to do it with the queues system that we were given.
+
+# update 9 january, 2025
+
+Created 3 more experiments:
+
+- `with-do` uses a cloudflare [Durable Object](https://developers.cloudflare.com/durable-objects/) to perform fetch requests. Limited to 500
+- `with-do6` uses a cloudflare [Durable Object](https://developers.cloudflare.com/durable-objects/) to perform 6 fetch requests each. Limited to 3000
+- `recursive-do` uses a cloudflare [Durable Object](https://developers.cloudflare.com/durable-objects/) to create more 'creator DOs', recursively, until it can create up to 500 requester DOs.
