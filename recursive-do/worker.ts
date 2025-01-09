@@ -44,7 +44,7 @@ export default {
       const creator = env.CREATOR.get(creatorId);
 
       // Send the URLs to the Creator DO
-      const response = await creator.fetch(
+      const response: Response = await creator.fetch(
         new Request("https://dummy-url/process", {
           method: "POST",
           headers: {
@@ -53,6 +53,13 @@ export default {
           body: JSON.stringify({ urls }),
         }),
       );
+
+      if (!response.ok) {
+        return new Response(
+          "Main fetch went wrong:" + (await response.text()),
+          { status: 500 },
+        );
+      }
 
       const results: { results: any[] } = await response.json();
       const t1 = Date.now();
