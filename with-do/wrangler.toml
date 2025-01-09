@@ -1,0 +1,13 @@
+#:schema node_modules/wrangler/config-schema.json
+name = "fetch-many-do"
+main = "worker.ts"
+compatibility_date = "2025-01-09"
+
+[durable_objects]
+bindings = [
+  { name = "RATE_LIMITER", class_name = "RequestSchedulerDO" }
+]
+
+[[migrations]]
+tag = "v1"
+new_classes = ["RequestSchedulerDO"]
