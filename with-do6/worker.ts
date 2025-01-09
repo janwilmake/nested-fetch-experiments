@@ -3,41 +3,46 @@
 import { DurableObject } from "cloudflare:workers";
 
 export interface Env {
-  RATE_LIMITER: DurableObjectNamespace;
+  PDO: DurableObjectNamespace;
 }
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const t0 = Date.now();
     const urls = Array.from({ length: 499 }, (_, i) => ({
-      // this url takes 5s
-      url: `https://test.github-backup.com/?random=${Math.random()}`,
+      urls: Array.from(
+        { length: 6 },
+        (_, j) =>
+          `https://test.github-backup.com/?random=${Math.random()}&request=${j}`,
+      ),
       id: (i + 1).toString(),
     }));
 
     console.log("urls:", urls.length);
 
-    const doIds: { id: DurableObjectId; url: string }[] = [];
+    const doIds: { id: DurableObjectId; urls: string[] }[] = [];
 
     // First pass: Create the DOs
-    const initPromises = urls.map(async ({ url, id }) => {
+    const initPromises = urls.map(async ({ urls, id }) => {
       console.log({ id });
-      const doId = env.RATE_LIMITER.newUniqueId();
-      doIds.push({ id: doId, url });
+      const doId = env.PDO.newUniqueId();
+      doIds.push({ id: doId, urls });
     });
 
     await Promise.all(initPromises);
     const t1 = Date.now();
 
+    // Second pass: Initialize fetches in all DOs
     const first = await Promise.all(
-      doIds.map(async ({ id, url }) => {
-        const instance = env.RATE_LIMITER.get(id);
+      doIds.map(async ({ id, urls }) => {
+        const instance = env.PDO.get(id);
         const response = await instance.fetch(
-          new Request(url, {
+          new Request(urls[0], {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
             },
+            body: JSON.stringify({ urls }),
           }),
         );
 
@@ -46,11 +51,11 @@ export default {
     );
     const t2 = Date.now();
 
-    // Second pass: Check results from all DOs
-    const resultPromises = doIds.map(async ({ id, url }) => {
-      const instance = env.RATE_LIMITER.get(id);
+    // Third pass: Check results from all DOs
+    const resultPromises = doIds.map(async ({ id, urls }) => {
+      const instance = env.PDO.get(id);
       const response = await instance.fetch(
-        new Request(url, {
+        new Request(urls[0], {
           method: "GET",
           headers: {
             "Content-Type": "application/json",
@@ -62,7 +67,7 @@ export default {
 
       return {
         doName: id.name,
-        url,
+        urls,
         result,
       };
     });
@@ -92,17 +97,17 @@ export default {
 };
 
 // Durable Object implementation
-export class RequestSchedulerDO extends DurableObject {
+export class PDO extends DurableObject {
   private state: DurableObjectState;
   private fetchPromises: Map<string, Promise<Response>>;
-  private results: Map<string, number>; // New map to store results in memory
+  private results: Map<string, number>;
 
   constructor(state: DurableObjectState, env: Env) {
     super(state, env);
     this.state = state;
     this.env = env;
     this.fetchPromises = new Map();
-    this.results = new Map(); // Initialize results map
+    this.results = new Map();
   }
 
   async fetch(request: Request): Promise<Response> {
@@ -110,28 +115,32 @@ export class RequestSchedulerDO extends DurableObject {
       const url = request.url;
 
       if (request.method === "POST") {
-        // Initialize new fetch
-        if (!this.fetchPromises.has(url)) {
-          const time = Date.now();
-          const fetchPromise = fetch(url)
-            .then(async (response) => {
-              const text = await response.text();
-              const duration = Date.now() - time;
-              this.results.set(url, duration); // Store in memory instead of DO storage
-              return response;
-            })
-            .catch((error) => {
-              console.error(`Fetch error for ${url}:`, error);
-              return new Response(`Error: ${error.message}`, { status: 500 });
-            });
+        // Initialize new fetches for all URLs
+        const { urls }: { urls: string[] } = await request.json();
 
-          this.fetchPromises.set(url, fetchPromise);
+        for (const fetchUrl of urls) {
+          if (!this.fetchPromises.has(fetchUrl)) {
+            const time = Date.now();
+            const fetchPromise = fetch(fetchUrl)
+              .then(async (response) => {
+                const text = await response.text();
+                const duration = Date.now() - time;
+                this.results.set(fetchUrl, duration);
+                return response;
+              })
+              .catch((error) => {
+                console.error(`Fetch error for ${fetchUrl}:`, error);
+                return new Response(`Error: ${error.message}`, { status: 500 });
+              });
+
+            this.fetchPromises.set(fetchUrl, fetchPromise);
+          }
         }
 
         return new Response(
           JSON.stringify({
             status: "processing",
-            url: request.url,
+            urls,
           }),
           {
             headers: {
@@ -140,22 +149,21 @@ export class RequestSchedulerDO extends DurableObject {
           },
         );
       } else if (request.method === "GET") {
-        // Check status and return result
-        const promise = this.fetchPromises.get(url);
-        if (!promise) {
-          return new Response(
-            JSON.stringify({ error: "No fetch in progress for this URL" }),
-            { status: 404 },
-          );
-        }
+        // Check status and return results for all URLs
+        const promises = Array.from(this.fetchPromises.values());
+        const urls = Array.from(this.fetchPromises.keys());
 
-        await promise; // Wait for the fetch to complete
-        const result = this.results.get(url); // Get result from memory
+        // Wait for all promises to complete concurrently
+        await Promise.all(promises);
+
+        const allResults = Object.fromEntries(
+          urls.map((url) => [url, this.results.get(url)]),
+        );
 
         return new Response(
           JSON.stringify({
             status: "completed",
-            result,
+            results: allResults,
           }),
           {
             headers: {

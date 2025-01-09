@@ -1,0 +1,13 @@
+#:schema node_modules/wrangler/config-schema.json
+name = "fetch-do6"
+main = "worker.ts"
+compatibility_date = "2025-01-09"
+
+[durable_objects]
+bindings = [
+  { name = "PDO", class_name = "PDO" }
+]
+
+[[migrations]]
+tag = "v1"
+new_classes = ["PDO"]
