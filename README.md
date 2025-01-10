@@ -17,8 +17,9 @@ And create stronger patterns that can make it possible to do more with workers. 
 
 # update 9 january, 2025
 
-Created 3 more experiments:
+Created 4 more experiments; see the README in the respective folders for more details.
 
-- `with-do` uses a cloudflare [Durable Object](https://developers.cloudflare.com/durable-objects/) to perform fetch requests. Limited to 500
-- `with-do6` uses a cloudflare [Durable Object](https://developers.cloudflare.com/durable-objects/) to perform 6 fetch requests each. Limited to 3000
-- `recursive-do` uses a cloudflare [Durable Object](https://developers.cloudflare.com/durable-objects/) to create more 'creator DOs', recursively, until it can create up to 500 requester DOs.
+- [`with-do`](with-do) uses a cloudflare [Durable Object](https://developers.cloudflare.com/durable-objects/) to perform fetch requests. Limited to 500
+- [`with-do6`](with-do6) uses a cloudflare [Durable Object](https://developers.cloudflare.com/durable-objects/) to perform 6 fetch requests each. Limited to 3000
+- [`recursive-do`](recursive-do) uses a cloudflare [Durable Object](https://developers.cloudflare.com/durable-objects/) to create more 'creator DOs', recursively, until it can create up to 500 requester DOs.
+- [`highly-recursive-do`](highly-recursive-do) adds exponential backoff, better error handling, and BRANCHES_PER_LAYER to control how deep the DO's will nest, resulting in successfully do 100.000 HTTP requests to an exernal API in at least 11.6 seconds.
