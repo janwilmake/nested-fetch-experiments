@@ -35,7 +35,7 @@ export default {
 
       // Example URLs creation (you would replace this with your actual URLs)
       const urls = Array.from({ length: amount }, (_, i) => ({
-        url: `https://test.github-backup.com/?random=${Math.random()}`,
+        url: `https://hacker-news.firebaseio.com/v0/item/${Math.ceil(Math.random()*42000000)}.json`,
         id: (i + 1).toString(),
       }));
 
@@ -100,12 +100,12 @@ export class CreatorDO extends DurableObject {
       const { urls } = (await request.json()) as { urls: URLRequest[] };
 
       // If URLs length is <= 500, create RequestSchedulerDOs directly
-      if (urls.length <= 500) {
+      if (urls.length === 1) {
         return await this.processUrlBatch(urls);
       }
 
       // Split URLs into batches of 500 and create multiple CreatorDOs
-      const batches = this.splitIntoBatches(urls, 500);
+      const batches = this.splitIntoBatches(urls, 2);
       const results = await Promise.all(
         batches.map(async (batchUrls) => {
           const creatorId = this.env.CREATOR.newUniqueId();
@@ -119,7 +119,11 @@ export class CreatorDO extends DurableObject {
               body: JSON.stringify({ urls: batchUrls }),
             }),
           );
-          return response.json();
+          if (response.ok) {
+            return response.json();
+          } else {
+            return { error: await response.text() };
+          }
         }),
       );
 
@@ -158,7 +162,7 @@ export class CreatorDO extends DurableObject {
     await Promise.all(
       doIds.map(async ({ id, url }) => {
         const instance = this.env.RATE_LIMITER.get(id);
-        await instance.fetch(
+        await instance.fetch(t
           new Request(url, {
             method: "POST",
             headers: {
@@ -200,7 +204,7 @@ export class CreatorDO extends DurableObject {
 
   private combineResults(batchResults: any[]): any {
     return {
-      results: batchResults.flatMap((batch) => batch.results),
+      results: batchResults.flatMap((batch) => batch.results || batch.error),
     };
   }
 }

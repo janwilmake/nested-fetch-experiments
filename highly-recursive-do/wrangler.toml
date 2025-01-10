@@ -1,0 +1,13 @@
+#:schema node_modules/wrangler/config-schema.json
+name = "highly-recursive-do"
+main = "worker.ts"
+compatibility_date = "2025-01-09"
+
+[durable_objects]
+bindings = [
+  { name = "RECURSIVE_FETCHER", class_name = "RecursiveFetcherDO" }
+]
+
+[[migrations]]
+tag = "v1"
+new_classes = ["RecursiveFetcherDO"]
