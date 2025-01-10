@@ -45,4 +45,6 @@ After this, I implemented exponential backoff as can be seen in the current impl
 
 100k fetch responses in 11.6 seconds, that's an impressive feat!
 
-With 1M requests it takes for ever to answer, so there must be better things we can do. If we could handle concurrency better, it may work.
+With 1M requests it takes for ever to answer, so there must be better things we can do. If we could handle concurrency better, it may work. Nevertheless, that's not the purpose of this experiment; My goal was to do 100k requests as fast as possible and that succeeds with decent looking reliability.
+
+If we wanted to controll max concurrency we could've just used queues and carefully ramp it up. This shows we can also immediately instantiate 100k DOs.
