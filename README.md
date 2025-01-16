@@ -23,3 +23,24 @@ Created 4 more experiments; see the README in the respective folders for more de
 - [`with-do6`](with-do6) uses a cloudflare [Durable Object](https://developers.cloudflare.com/durable-objects/) to perform 6 fetch requests each. Limited to 3000
 - [`recursive-do`](recursive-do) uses a cloudflare [Durable Object](https://developers.cloudflare.com/durable-objects/) to create more 'creator DOs', recursively, until it can create up to 500 requester DOs.
 - [`highly-recursive-do`](highly-recursive-do) adds exponential backoff, better error handling, and BRANCHES_PER_LAYER to control how deep the DO's will nest, resulting in successfully do 100.000 HTTP requests to an exernal API in at least 11.6 seconds.
+
+# update january 16, 2025
+
+I've created [dodfetch](https://github.com/janwilmake/dodfetch) based off of this work.
+
+However, i've become aware that this function shall be handled with care due to the cost it can bring about. The thing is, [DO's charge a large amount for wallclock time](https://developers.cloudflare.com/durable-objects/platform/pricing/).
+
+Let's say, an api call takes on average 1 sec.
+
+128mb x1 sec = 0.128 GB-s
+
+Durable objects cost $12.50/million GB-s + $0.15/million requests.
+
+Therefore, **the cost of dodfetch for one million requests would be around $1.75 times the average request-time in seconds**. Because of this, it's only useful to use dodfetch for queries that happen fast. Requests to LLMs, for example, are better off using a different approach, such as a queue, because it becomes too expensive.
+
+If you run 1 million fetch requests to an LLM API that take 30 seconds each, this will cost you **$52.50**.
+
+Unfortunately, I've found out the hard way...
+
+> [!CAUTION]
+> Use this function with care!
